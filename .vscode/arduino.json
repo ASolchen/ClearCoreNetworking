@@ -1,0 +1,7 @@
+{
+    "output": "../ArduinoOutput",
+    "board": "ClearCore:sam:clearcore",
+    "programmer": "atmel_ice",
+    "sketch": "ClearCoreSimpleMB.ino",
+    "port": "COM4"
+}
