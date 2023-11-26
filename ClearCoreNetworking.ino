@@ -2,7 +2,7 @@
 #include "ClearCore.h"
 #include <Ethernet.h>
 #include "src/ModbusTCPServer.h"
-#define DEBUG
+#undef DEBUG
 
 byte mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED
@@ -33,8 +33,9 @@ void setup() {
       delay(1); // do nothing, no point running without Ethernet hardware
     }
   }
-  if (Ethernet.linkStatus() == LinkOFF) {
+  while (Ethernet.linkStatus() == LinkOFF) {
     Serial.println("Ethernet cable is not connected.");
+    delay(1000);
   }
 
   // start the server
@@ -50,6 +51,7 @@ void setup() {
 
   // configure a single coil at address 0x00
   modbusTCPServer.configureCoils(0x00, 100);
+  modbusTCPServer.configureHoldingRegisters(0x00, 100);
 }
 
 void loop() {
@@ -59,7 +61,7 @@ void loop() {
   if (client) {
     // a new client connected
     Serial.println("new client");
-    Serial.println(client);
+    //Serial.println(client);
 
     // let the Modbus TCP accept the connection 
     modbusTCPServer.accept(client);
@@ -75,7 +77,7 @@ void loop() {
         }
         Serial.println("");
 */
-      delay(50);
+      delay(5);
       }
       Serial.println("client disconnected");
     }

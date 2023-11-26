@@ -13,6 +13,7 @@
 #include <sys/types.h>
 
 #include "Arduino.h"
+
 #ifndef DEBUG
 #define printf(...) {}
 #define fprintf(...) {}
@@ -155,6 +156,9 @@ static ssize_t _modbus_tcp_send(modbus_t *ctx, const uint8_t *req, int req_lengt
 }
 
 static int _modbus_tcp_receive(modbus_t *ctx, uint8_t *req) {
+#ifdef DEBUG
+    Serial.println("modbus-tcp.cpp>modbus_tcp_receive()");
+#endif
     return _modbus_receive_msg(ctx, req, MSG_INDICATION);
 }
 
@@ -268,7 +272,7 @@ int modbus_tcp_accept(modbus_t *ctx, Client* client)
 
 static int _modbus_tcp_select(modbus_t *ctx, fd_set *rset, struct timeval *tv, int length_to_read)
 {
-    int s_rc;
+    int s_rc; //server recieved ???
     (void)rset;
 
     modbus_tcp_t *ctx_tcp = (modbus_tcp_t*)ctx->backend_data;

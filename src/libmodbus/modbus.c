@@ -15,18 +15,13 @@
 #include <errno.h>
 #include <limits.h>
 #include <time.h>
-#ifndef _MSC_VER
 #include <unistd.h>
-#endif
-#ifdef ARDUINO
 #include <stdbool.h>
 #include <Arduino.h>
-
-#ifndef DEBUG
+#include "hack_debug.h"
 #define printf(...) {}
 #define fprintf(...) {}
-#endif
-#endif
+
 
 #if defined(ARDUINO) && defined(__AVR__)
 #undef EIO
@@ -134,11 +129,15 @@ const char *modbus_strerror(int errnum) {
 void _error_print(modbus_t *ctx, const char *context)
 {
     if (ctx->debug) {
-        fprintf(stderr, "ERROR %s", modbus_strerror(errno));
+        //fprintf(stderr, "ERROR %s", modbus_strerror(errno));
+        serial_print(modbus_strerror(errno));
         if (context != NULL) {
-            fprintf(stderr, ": %s\n", context);
+            serial_print('Error and no context');
+            //fprintf(stderr, ": %s\n", context);
         } else {
-            fprintf(stderr, "\n");
+            
+            serial_print('Error with context');
+            //fprintf(stderr, "\n");
         }
     }
 }
@@ -170,6 +169,9 @@ int modbus_flush(modbus_t *ctx)
 /* Computes the length of the expected response */
 static unsigned int compute_response_length_from_request(modbus_t *ctx, uint8_t *req)
 {
+#ifdef DEBUG
+    serial_print("modbus.c>compute_response_length_from_request()");
+#endif
     int length;
     const int offset = ctx->backend->header_length;
 
@@ -200,13 +202,15 @@ static unsigned int compute_response_length_from_request(modbus_t *ctx, uint8_t 
     default:
         length = 5;
     }
-
     return offset + length + ctx->backend->checksum_length;
 }
 
 /* Sends a request/response */
 static int send_msg(modbus_t *ctx, uint8_t *msg, int msg_length)
 {
+#ifdef DEBUG
+    serial_print("modbus.c>send_msg()");
+#endif
     int rc;
     int i;
 
@@ -334,6 +338,9 @@ static uint8_t compute_meta_length_after_function(int function,
 static int compute_data_length_after_meta(modbus_t *ctx, uint8_t *msg,
                                           msg_type_t msg_type)
 {
+#ifdef DEBUG
+    serial_print("modbus.c>compute_data_length_after_meta()");
+#endif    
     int function = msg[ctx->backend->header_length];
     int length;
 
@@ -381,6 +388,7 @@ static int compute_data_length_after_meta(modbus_t *ctx, uint8_t *msg,
 
 int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 {
+
     int rc;
     fd_set rset;
     struct timeval tv;
@@ -391,12 +399,11 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 
     if (ctx->debug) {
         if (msg_type == MSG_INDICATION) {
-            printf("Waiting for a indication...\n");
+            serial_print("Waiting for a indication...");
         } else {
-            printf("Waiting for a confirmation...\n");
+            serial_print("Waiting for a confirmation...");
         }
     }
-
 
     /* We need to analyse the message step by step.  At the first step, we want
      * to reach the function code because all packets contain this
@@ -415,7 +422,7 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
     }
 
     while (length_to_read != 0) {
-        rc = ctx->backend->select(ctx, &rset, p_tv, length_to_read);
+        rc = ctx->backend->select(ctx, &rset, p_tv, length_to_read); //checks if client availible
         if (rc == -1) {
             _error_print(ctx, "select");
             if (ctx->error_recovery & MODBUS_ERROR_RECOVERY_LINK) {
@@ -433,7 +440,7 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
             return -1;
         }
 
-        rc = ctx->backend->recv(ctx, msg + msg_length, length_to_read);
+        rc = ctx->backend->recv(ctx, msg + msg_length, length_to_read); //pads a zero at the end of the message. This will be the function code.
         if (rc == 0) {
             errno = ECONNRESET;
             rc = -1;
@@ -456,8 +463,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
         /* Display the hex code of each character received */
         if (ctx->debug) {
             int i;
-            for (i=0; i < rc; i++)
-                printf("<%.2X>", msg[msg_length + i]);
+            for (i=0; i < rc; i++){
+                //printf breaks stuff printf("<%.2X>", msg[msg_length + i]);
+            }
         }
 
         /* Sums bytes received */
@@ -513,7 +521,9 @@ int _modbus_receive_msg(modbus_t *ctx, uint8_t *msg, msg_type_t msg_type)
 /* Receive the request from a modbus master */
 int modbus_receive(modbus_t *ctx, uint8_t *req)
 {
-
+#ifdef DEBUG
+    serial_print("modbus.c>modbus_receive()");
+#endif
     if (ctx == NULL) {
         errno = EINVAL;
         return -1;
@@ -737,6 +747,9 @@ static int response_exception(modbus_t *ctx, sft_t *sft,
 int modbus_reply(modbus_t *ctx, const uint8_t *req,
                  int req_length, modbus_mapping_t *mb_mapping)
 {
+#ifdef DEBUG
+    serial_print("modbus.c>modbus_reply()");
+#endif
     int offset;
     int slave;
     int function;

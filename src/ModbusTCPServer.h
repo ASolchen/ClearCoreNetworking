@@ -21,7 +21,6 @@
 #define _MODBUS_TCP_SERVER_H_INCLUDED
 
 #include <Client.h>
-
 #include "ModbusServer.h"
 
 class ModbusTCPServer : public ModbusServer {
